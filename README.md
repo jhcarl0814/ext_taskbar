@@ -1,6 +1,8 @@
 # ext_taskbar
 Restore Windows 11 taskbar's lost functionalities when switching it to multi-row & never-combining mode!
 
+![using ext_taskbar](https://github.com/jhcarl0814/ext_taskbar/blob/main/readme_rsc/ext_taskbar20230803.gif)
+
 ## 1. Prepare to use multi-row taskbar on Windows 11
 
 ### 1.1 Settings >> Personalization >> Themes >> Desktop icon settings
