@@ -1,36 +1,55 @@
-﻿cmake_minimum_required(VERSION 3.5)
-
-project(ext_taskbar VERSION 0.1 LANGUAGES CXX)
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
+﻿# Preamble
+cmake_minimum_required(VERSION 3.28)
+list(APPEND CMAKE_MESSAGE_CONTEXT "ext_taskbar")
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF) # https://discourse.cmake.org/t/cmake-3-28-cmake-cxx-compiler-clang-scan-deps-notfound-not-found/9244
+project(ext_taskbar
+    VERSION 0.0.0
+    DESCRIPTION "Restore Windows 11 taskbar's lost functionalities when switching it to multi-row & never-combining mode"
+    LANGUAGES CXX
+)
 
+
+# Project wide setup
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
+
+# Dependencies
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS WebEngineWidgets)
 
-if (MSVC)
-    add_compile_options("/Zc:preprocessor")
-endif()
+set(FETCHCONTENT_SOURCE_DIR_BOOST "C:/cpp/boost_1_83_0/boost")
+set(FETCHCONTENT_SOURCE_DIR_EXT "C:/Users/jhcar/Documents/GitHub/ext")
 
-file(GLOB_RECURSE EXT_SOURCES
-    C:/cpp/ext/ext_infrastructure/*.hpp
-    C:/cpp/ext/ext_infrastructure/*.cpp
-    C:/cpp/ext/ext_core/*.hpp
-    C:/cpp/ext/ext_core/*.cpp
-    C:/cpp/ext/ext_gui/*.hpp
-    C:/cpp/ext/ext_gui/*.cpp
-    C:/cpp/ext/ext_widgets/*.hpp
-    C:/cpp/ext/ext_widgets/*.cpp
-    C:/cpp/ext/ext_web/*.hpp
-    C:/cpp/ext/ext_web/*.cpp
+include(FetchContent)
+FetchContent_Declare(Boost
+    GIT_REPOSITORY https://github.com/boostorg/boost.git
+    GIT_TAG 564e2ac16907019696cdaba8a93e3588ec596062 # boost-1.83.0
+    GIT_SHALLOW TRUE
+    EXCLUDE_FROM_ALL
+    #SYSTEM
+    FIND_PACKAGE_ARGS 1.83.0
 )
+FetchContent_Declare(ext
+    GIT_REPOSITORY https://github.com/jhcarl0814/ext.git
+    GIT_TAG main
+    EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(Boost ext)
+
+
+# Targets
+add_custom_target(ext_taskbar_administrative_files)
+target_sources(ext_taskbar_administrative_files PRIVATE "./README.md" "./readme_rsc/ext_taskbar20230803.gif" "./readme_rsc/ext_taskbar20230803.mp4" "./LICENSE")
+set_source_files_properties("./README.md" "./readme_rsc/ext_taskbar20230803.gif" "./readme_rsc/ext_taskbar20230803.mp4" "./LICENSE" PROPERTIES HEADER_FILE_ONLY YES)
+add_custom_target(ext_taskbar_tooling_support)
+target_sources(ext_taskbar_tooling_support PRIVATE "./.clang-format")
+set_source_files_properties("./.clang-format" PROPERTIES HEADER_FILE_ONLY YES)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -48,9 +67,9 @@ set(PROJECT_SOURCES
         task_manager.hpp
 
         unifont.qrc
-
-        ${EXT_SOURCES}
+        "./fonts/unifont-15.0.01.ttf"
 )
+set_source_files_properties("./fonts/unifont-15.0.01.ttf" PROPERTIES HEADER_FILE_ONLY YES)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ext_taskbar
@@ -75,8 +94,21 @@ else()
     endif()
 endif()
 
+message("CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
+message("CMAKE_CXX_SIMULATE_ID: ${CMAKE_CXX_SIMULATE_ID}")
+message("CMAKE_CXX_COMPILER_FRONTEND_VARIANT: ${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}")
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC") # https://discourse.cmake.org/t/how-to-determine-if-clang-or-clang-cl-is-used-on-windows/4129
+    target_compile_options(ext_taskbar PRIVATE "/W4" "/WX")
+else()
+    target_compile_options(ext_taskbar PRIVATE "-Wall" "-Wextra" "-pedantic" "-Werror" "-Wno-language-extension-token")
+endif()
+
 target_link_libraries(ext_taskbar PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(ext_taskbar PRIVATE Qt${QT_VERSION_MAJOR}::WebEngineWidgets)
+target_link_libraries(ext_taskbar
+    PRIVATE
+        ext::web
+)
 
 set_target_properties(ext_taskbar PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
@@ -88,20 +120,4 @@ set_target_properties(ext_taskbar PROPERTIES
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(ext_taskbar)
-endif()
-
-target_include_directories(ext_taskbar PRIVATE "C:/cpp/ext")
-
-target_include_directories(ext_taskbar PRIVATE "C:/cpp/windows/boost_1_82_0")
-target_link_directories(ext_taskbar PRIVATE "C:/cpp/windows/boost_1_82_0/stage/lib")
-#target_include_directories(ext_taskbar PRIVATE "C:/Program Files/Graphviz/include")
-#target_link_directories(ext_taskbar PRIVATE "C:/Program Files/Graphviz/lib")
-
-#target_compile_definitions(ext_taskbar PUBLIC _USE_JOIN_VIEW_INPUT_RANGE)
-
-if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd5105")
-    string(REGEX REPLACE "/W[1-3]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-else()
-    add_compile_options(-Wall -Wextra -pedantic -Werror)
 endif()
